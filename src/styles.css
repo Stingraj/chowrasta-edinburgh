@@ -1,0 +1,239 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-spice: var(--spice);
+  --color-cream: var(--cream);
+  --color-cream-dark: var(--cream-dark);
+  --color-heritage: var(--heritage);
+  --color-heritage-deep: var(--heritage-deep);
+  --color-maroon: var(--maroon);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --font-display: "Cinzel", "Playfair Display", serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-body: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-script: "Great Vibes", cursive;
+}
+
+:root {
+  --radius: 0.25rem;
+
+  /* Brand */
+  --heritage: oklch(0.32 0.05 155);
+  --heritage-deep: oklch(0.22 0.04 155);
+  --cream: oklch(0.96 0.02 85);
+  --cream-dark: oklch(0.91 0.03 80);
+  --gold: oklch(0.74 0.13 80);
+  --gold-soft: oklch(0.82 0.09 82);
+  --spice: oklch(0.62 0.18 45);
+  --maroon: oklch(0.35 0.1 25);
+
+  --background: var(--cream);
+  --foreground: oklch(0.2 0.02 80);
+  --card: oklch(0.98 0.015 85);
+  --card-foreground: var(--foreground);
+  --primary: var(--heritage);
+  --primary-foreground: var(--cream);
+  --secondary: var(--gold);
+  --secondary-foreground: var(--heritage-deep);
+  --muted: var(--cream-dark);
+  --muted-foreground: oklch(0.45 0.03 80);
+  --accent: var(--spice);
+  --accent-foreground: var(--cream);
+  --border: oklch(0.85 0.04 80);
+  --ring: var(--gold);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-gold) 60%, transparent);
+    color: var(--color-heritage-deep);
+  }
+}
+
+@utility heritage-card {
+  background: var(--color-card);
+  border: 1px solid color-mix(in oklab, var(--color-gold) 35%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--color-gold) 18%, transparent) inset,
+    0 20px 40px -24px color-mix(in oklab, var(--color-heritage-deep) 50%, transparent);
+  transition:
+    transform 600ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 600ms ease,
+    border-color 400ms ease;
+}
+.heritage-card:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in oklab, var(--color-gold) 70%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--color-gold) 30%, transparent) inset,
+    0 30px 60px -20px color-mix(in oklab, var(--color-heritage-deep) 65%, transparent);
+}
+
+@utility gold-border {
+  border: 1px solid color-mix(in oklab, var(--color-gold) 60%, transparent);
+  outline: 1px solid color-mix(in oklab, var(--color-gold) 25%, transparent);
+  outline-offset: 4px;
+}
+
+/* Sticky nav shadow on scroll */
+[data-sticky-nav] {
+  transition:
+    box-shadow 400ms ease,
+    background-color 400ms ease;
+}
+[data-sticky-nav].is-stuck {
+  box-shadow: 0 10px 30px -18px color-mix(in oklab, var(--color-heritage-deep) 60%, transparent);
+  background-color: color-mix(in oklab, var(--color-cream) 96%, transparent);
+}
+
+/* Underline link animation */
+.link-underline {
+  position: relative;
+}
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 1px;
+  background: var(--color-spice);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.link-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+/* CTA button shimmer */
+.btn-heritage {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-heritage:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px -12px color-mix(in oklab, var(--color-heritage-deep) 80%, transparent);
+}
+.btn-heritage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    color-mix(in oklab, var(--color-gold) 60%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 900ms ease;
+  z-index: -1;
+}
+.btn-heritage:hover::before {
+  transform: translateX(120%);
+}
+
+/* Floating handi for hero biryani */
+@keyframes float-handi {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+.animate-float {
+  animation: float-handi 6s ease-in-out infinite;
+}
+
+@keyframes slow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-slow-spin {
+  animation: slow-spin 40s linear infinite;
+}
+
+@keyframes marquee-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-marquee {
+  animation: marquee-x 45s linear infinite;
+}
+
+/* Image zoom wrapper */
+.img-zoom {
+  overflow: hidden;
+}
+.img-zoom img {
+  transition:
+    transform 1200ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 600ms ease;
+}
+.img-zoom:hover img {
+  transform: scale(1.08);
+  filter: saturate(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
