@@ -1,4 +1,5 @@
-const { createClient } = require("@sanity/client");
+import { createClient } from "@sanity/client";
+import process from "node:process";
 
 const token = process.env.SANITY_AUTH_TOKEN;
 if (!token) {
