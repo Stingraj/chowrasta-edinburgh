@@ -6,8 +6,8 @@ let clientInstance: any = null;
 export function getSanityClient() {
   if (!clientInstance) {
     // Read at runtime to support serverless environments (Cloudflare/Vercel) safely
-    const projectId = process.env.SANITY_PROJECT_ID || "placeholder";
-    const dataset = process.env.SANITY_DATASET || "production";
+    const projectId = import.meta.env.VITE_SANITY_PROJECT_ID || process.env.SANITY_PROJECT_ID || "61l4y3x0";
+    const dataset = import.meta.env.VITE_SANITY_DATASET || process.env.SANITY_DATASET || "production";
     
     clientInstance = createClient({
       projectId,
