@@ -832,6 +832,50 @@ const mapSanityCategory = (sanityCat?: string): string => {
   return found || "Starters";
 };
 
+const MENU_NAME_ALIASES: Record<string, string> = {
+  "chicken dum biryani": "hyderabad chicken dum biryani",
+  "aloo samosa": "aloo samosa big",
+};
+
+const normalizeMenuName = (name: string) =>
+  name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[’']/g, "")
+    .replace(/&/g, " and ")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const buildStaticMenuLookup = () => {
+  const lookup = new Map<string, MenuItem>();
+
+  const register = (key: string, item: MenuItem) => {
+    const normalizedKey = normalizeMenuName(key);
+    if (normalizedKey && !lookup.has(normalizedKey)) {
+      lookup.set(normalizedKey, item);
+    }
+  };
+
+  MENU_ITEMS.forEach((item) => {
+    register(item.name, item);
+    register(item.name.replace(/^Hyderabad\s+/i, ""), item);
+    register(item.name.replace(/\bBig\b/gi, ""), item);
+  });
+
+  Object.entries(MENU_NAME_ALIASES).forEach(([alias, target]) => {
+    const targetItem = lookup.get(normalizeMenuName(target));
+    if (targetItem) {
+      register(alias, targetItem);
+    }
+  });
+
+  return lookup;
+};
+
+const STATIC_MENU_LOOKUP = buildStaticMenuLookup();
+
 function MenuSection({
   onSelectItem,
   data,
@@ -864,38 +908,49 @@ function MenuSection({
   }, [navHeight]);
 
   const items = useMemo(() => {
-    // Start with a map of static items keyed by lowercase name
-    const itemsMap = new Map<string, MenuItem>();
-    MENU_ITEMS.forEach((item) => {
-      itemsMap.set(item.name.toLowerCase(), { ...item });
-    });
+    const itemsMap = new Map<string, MenuItem>(
+      MENU_ITEMS.map((item) => [item.id, { ...item }]),
+    );
+    const extraItems: MenuItem[] = [];
 
-    // Merge Sanity items into the map
     if (data && data.length > 0) {
       data.forEach((sanityItem: any) => {
-        const nameLower = sanityItem.name.toLowerCase();
-        const mappedCat = mapSanityCategory(sanityItem.category);
-        const existing = itemsMap.get(nameLower);
+        if (!sanityItem?.name) return;
 
-        const mappedItem: MenuItem = {
-          id: sanityItem._id || existing?.id || nameLower,
-          name: sanityItem.name,
-          price: sanityItem.price,
-          category: mappedCat || existing?.category || "Starters",
-          description: sanityItem.description || existing?.description || "",
-          image: sanityItem.image 
-            ? urlFor(sanityItem.image).url() 
-            : (existing?.image || "/images/menu/starters/chicken-65.jpg"),
-          tag: sanityItem.tags && sanityItem.tags.length > 0 
-            ? sanityItem.tags[0] 
-            : existing?.tag,
-        };
+        const matchedStaticItem = STATIC_MENU_LOOKUP.get(normalizeMenuName(sanityItem.name));
 
-        itemsMap.set(nameLower, mappedItem);
+        if (!matchedStaticItem) {
+          if (!sanityItem.image) return;
+
+          extraItems.push({
+            id: sanityItem._id || normalizeMenuName(sanityItem.name),
+            name: sanityItem.name,
+            price: sanityItem.price || "",
+            category: mapSanityCategory(sanityItem.category),
+            description: sanityItem.description || "",
+            image: urlFor(sanityItem.image).url(),
+            tag:
+              Array.isArray(sanityItem.tags) && sanityItem.tags.length > 0
+                ? sanityItem.tags[0]
+                : undefined,
+          });
+          return;
+        }
+
+        const currentItem = itemsMap.get(matchedStaticItem.id) ?? { ...matchedStaticItem };
+
+        itemsMap.set(matchedStaticItem.id, {
+          ...currentItem,
+          image: sanityItem.image ? urlFor(sanityItem.image).url() : currentItem.image,
+          tag:
+            Array.isArray(sanityItem.tags) && sanityItem.tags.length > 0
+              ? sanityItem.tags[0]
+              : currentItem.tag,
+        });
       });
     }
 
-    return Array.from(itemsMap.values());
+    return [...MENU_ITEMS.map((item) => itemsMap.get(item.id) ?? item), ...extraItems];
   }, [data]);
 
   const filteredItems = useMemo(() => {
@@ -951,14 +1006,14 @@ function MenuSection({
               : "bg-transparent py-2 mb-16 border-b border-transparent"
           }`}
         >
-          <div className="hide-scrollbar flex md:flex-wrap justify-start md:justify-center gap-2 md:gap-3 max-w-4xl mx-auto overflow-x-auto md:overflow-visible pb-1 md:pb-0">
+          <div className="hide-scrollbar flex w-full flex-nowrap justify-start gap-1.5 overflow-x-auto pb-1 md:flex-wrap md:justify-center md:gap-3 md:overflow-visible md:pb-0">
             {CATEGORIES.map((cat) => {
               const isActive = cat.toLowerCase() === activeCategory.toLowerCase();
               return (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`shrink-0 whitespace-nowrap px-5 py-2.5 rounded-sm text-xs tracking-[0.2em] uppercase font-sans transition-all duration-300 border ${
+                  className={`shrink-0 whitespace-nowrap rounded-sm border px-3.5 py-2 text-[0.68rem] tracking-[0.16em] uppercase font-sans transition-all duration-300 md:px-5 md:py-2.5 md:text-xs md:tracking-[0.2em] ${
                     isActive
                       ? "bg-heritage text-cream border-heritage shadow-lg shadow-heritage/10 shadow-sm"
                       : "bg-cream text-heritage-deep border-gold/30 hover:border-gold hover:bg-gold/5 cursor-pointer"
@@ -998,10 +1053,6 @@ function MenuSection({
                       {item.tag}
                     </span>
                   )}
-                  {/* Category Tag */}
-                  <span className="absolute bottom-2.5 right-2.5 bg-heritage/90 backdrop-blur-sm text-gold text-[0.5rem] md:text-[0.55rem] tracking-[0.15em] md:tracking-[0.2em] uppercase px-2 py-0.5 md:py-1 font-sans shadow-sm border border-gold/20 z-10">
-                    {item.category}
-                  </span>
                 </div>
 
                 <div className="p-4 md:p-5 flex-1 flex flex-col justify-between overflow-hidden">
