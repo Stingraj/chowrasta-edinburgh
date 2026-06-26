@@ -6,7 +6,6 @@ import { Ornament, SectionTitle } from "@/components/Ornament";
 import { Reveal } from "@/components/Reveal";
 import { ScrollTop, StickyNavShadow } from "@/components/ScrollTop";
 import { CATEGORIES, MENU_ITEMS, COMBO_ITEMS, type MenuItem } from "@/data/menu";
-import { submitEnquiry } from "@/lib/api/enquiry.functions";
 import { getSanityClient, urlFor } from "@/lib/sanity";
 import {
   X,
@@ -42,7 +41,7 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Great+Vibes&family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,500;0,700;1,400&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Great+Vibes&family=Inter:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap",
       },
     ],
   }),
@@ -1605,8 +1604,17 @@ function Location() {
     setErrorMessage("");
 
     try {
-      const response = await submitEnquiry({ data: formData });
-      if (response && response.success) {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const payload = await response.json();
+
+      if (response.ok && payload?.success) {
         setStatus("success");
         setFormData({
           name: "",
@@ -1617,7 +1625,7 @@ function Location() {
           message: "",
         });
       } else {
-        throw new Error("Failed to submit enquiry. Please try again.");
+        throw new Error(payload?.error || "Failed to submit enquiry. Please try again.");
       }
     } catch (err) {
       console.error(err);
@@ -1631,9 +1639,9 @@ function Location() {
   };
 
   return (
-    <section id="location" data-section-anchor className="py-24 bg-cream-dark/40 relative overflow-hidden">
+    <section id="location" data-section-anchor className="py-16 md:py-24 bg-cream-dark/40 relative overflow-hidden">
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#c5a059_1px,transparent_1px)] [background-size:16px_16px]" />
-      <div className="max-w-7xl mx-auto px-6 relative">
+      <div className="max-w-7xl mx-auto px-5 md:px-6 relative">
         <SectionTitle
           eyebrow="Visit & Contact Us"
           title="Find Chowrasta in Edinburgh"
@@ -1664,12 +1672,12 @@ function Location() {
               },
             ].map((c, i) => (
               <Reveal key={c.t} delay={i * 100} y={20}>
-                <div className="heritage-card p-6 bg-cream flex items-start gap-4 h-full">
+                <div className="heritage-card p-5 md:p-6 bg-cream flex items-start gap-4 h-full">
                   <div className="p-3 bg-heritage/5 border border-gold/30 rounded-sm shrink-0">
                     {c.icon}
                   </div>
                   <div className="flex-1">
-                    <p className="text-[0.65rem] tracking-[0.3em] text-spice uppercase font-sans font-bold mb-1.5">
+                    <p className="text-[0.65rem] tracking-[0.28em] text-spice uppercase font-sans font-medium mb-1.5">
                       {c.t}
                     </p>
                     {c.t === "Contact Info" ? (
@@ -1677,7 +1685,7 @@ function Location() {
                         <div className="flex items-center">
                           <a
                             href="tel:+447769237464"
-                            className="font-serif text-lg text-heritage-deep font-semibold leading-tight hover:text-gold transition-colors inline-flex items-center gap-1.5"
+                            className="font-sans text-base md:text-lg text-heritage-deep font-medium leading-tight hover:text-gold transition-colors inline-flex items-center gap-1.5"
                           >
                             <Phone className="w-4 h-4 text-gold shrink-0" />
                             +44 7769 237464
@@ -1700,7 +1708,7 @@ function Location() {
                             WhatsApp Chat
                           </a>
                         </div>
-                        <div className="flex items-center font-serif text-sm md:text-base text-muted-foreground flex-col items-start gap-1.5">
+                        <div className="flex items-center font-sans text-sm md:text-base text-muted-foreground flex-col items-start gap-1.5">
                           <a
                             href="mailto:service@chowrastaedi.com"
                             className="hover:text-gold transition-colors inline-flex items-center gap-1.5"
@@ -1719,10 +1727,10 @@ function Location() {
                       </div>
                     ) : (
                       <>
-                        <p className="font-serif text-lg text-heritage-deep font-semibold leading-tight">
+                        <p className="font-sans text-base md:text-lg text-heritage-deep font-medium leading-tight">
                           {c.l1}
                         </p>
-                        <p className="font-serif text-base text-muted-foreground mt-0.5">{c.l2}</p>
+                        <p className="font-sans text-sm md:text-base text-muted-foreground mt-0.5">{c.l2}</p>
                       </>
                     )}
                   </div>
@@ -1734,7 +1742,7 @@ function Location() {
               <div className="p-6 border border-gold/30 rounded-sm bg-heritage text-cream relative overflow-hidden">
                 <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#c5a059_1px,transparent_1px)] [background-size:12px_12px]" />
                 <h4 className="font-display text-lg text-gold mb-2">Corporate & Catering</h4>
-                <p className="text-sm text-cream/80 leading-relaxed font-serif italic">
+                <p className="text-sm text-cream/80 leading-relaxed font-sans">
                   We offer premium Hyderabadi catering services, private party hosting, and office
                   lunches. Fill out our business enquiry form, and our event coordination team will
                   get in touch with custom solutions.
@@ -1746,11 +1754,11 @@ function Location() {
           {/* Right Column: Enquiry Form */}
           <div className="lg:col-span-7">
             <Reveal delay={150} y={20}>
-              <div className="heritage-card bg-cream p-8 md:p-10 border-gold/45 shadow-xl relative overflow-hidden">
+              <div className="heritage-card bg-cream p-6 sm:p-8 md:p-10 border-gold/45 shadow-xl relative overflow-hidden">
                 <h3 className="font-display text-xl text-heritage-deep mb-1">
                   Business Enquiry & Contact Form
                 </h3>
-                <p className="text-xs tracking-wider text-gold uppercase font-sans mb-8">
+                <p className="text-xs tracking-[0.24em] text-gold uppercase font-sans font-medium mb-7 md:mb-8">
                   For catering, event bookings, bulk orders, and enquiries
                 </p>
 
@@ -1774,7 +1782,7 @@ function Location() {
                     </button>
                   </motion.div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                     {status === "error" && (
                       <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm flex gap-3 items-start rounded-r-md">
                         <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
@@ -1787,17 +1795,18 @@ function Location() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Name */}
                       <div className="space-y-1">
-                        <label className="text-xs uppercase tracking-widest text-heritage-deep font-sans font-semibold">
+                        <label className="text-xs uppercase tracking-[0.22em] text-heritage-deep font-sans font-medium">
                           Your Name
                         </label>
-                        <div className="relative">
+                        <div className={`field-shell relative rounded-sm border bg-cream-dark/15 ${errors.name ? "border-red-500" : "border-gold/30"}`}>
                           <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gold" />
                           <input
                             type="text"
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            className={`w-full pl-10 pr-4 py-2 bg-cream-dark/15 border rounded-sm text-sm text-heritage-deep focus:border-gold focus:outline-none transition-all duration-300 font-sans ${errors.name ? "border-red-500 focus:border-red-500" : "border-gold/30"}`}
+                            autoComplete="name"
+                            className={`w-full rounded-sm bg-transparent pl-10 pr-4 py-2.5 text-sm text-heritage-deep focus:outline-none font-sans ${errors.name ? "border-red-500 focus:border-red-500" : ""}`}
                             placeholder="e.g. John Doe"
                           />
                         </div>
@@ -1808,17 +1817,19 @@ function Location() {
 
                       {/* Email */}
                       <div className="space-y-1">
-                        <label className="text-xs uppercase tracking-widest text-heritage-deep font-sans font-semibold">
+                        <label className="text-xs uppercase tracking-[0.22em] text-heritage-deep font-sans font-medium">
                           Business Email
                         </label>
-                        <div className="relative">
+                        <div className={`field-shell relative rounded-sm border bg-cream-dark/15 ${errors.email ? "border-red-500" : "border-gold/30"}`}>
                           <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gold" />
                           <input
                             type="email"
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            className={`w-full pl-10 pr-4 py-2 bg-cream-dark/15 border rounded-sm text-sm text-heritage-deep focus:border-gold focus:outline-none transition-all duration-300 font-sans ${errors.email ? "border-red-500 focus:border-red-500" : "border-gold/30"}`}
+                            autoComplete="email"
+                            inputMode="email"
+                            className={`w-full rounded-sm bg-transparent pl-10 pr-4 py-2.5 text-sm text-heritage-deep focus:outline-none font-sans ${errors.email ? "border-red-500 focus:border-red-500" : ""}`}
                             placeholder="e.g. name@company.com"
                           />
                         </div>
@@ -1831,17 +1842,19 @@ function Location() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Phone */}
                       <div className="space-y-1">
-                        <label className="text-xs uppercase tracking-widest text-heritage-deep font-sans font-semibold">
+                        <label className="text-xs uppercase tracking-[0.22em] text-heritage-deep font-sans font-medium">
                           Phone Number
                         </label>
-                        <div className="relative">
+                        <div className={`field-shell relative rounded-sm border bg-cream-dark/15 ${errors.phone ? "border-red-500" : "border-gold/30"}`}>
                           <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gold" />
                           <input
                             type="tel"
                             name="phone"
                             value={formData.phone}
                             onChange={handleChange}
-                            className={`w-full pl-10 pr-4 py-2 bg-cream-dark/15 border rounded-sm text-sm text-heritage-deep focus:border-gold focus:outline-none transition-all duration-300 font-sans ${errors.phone ? "border-red-500 focus:border-red-500" : "border-gold/30"}`}
+                            autoComplete="tel"
+                            inputMode="tel"
+                            className={`w-full rounded-sm bg-transparent pl-10 pr-4 py-2.5 text-sm text-heritage-deep focus:outline-none font-sans ${errors.phone ? "border-red-500 focus:border-red-500" : ""}`}
                             placeholder="e.g. 07123 456789"
                           />
                         </div>
@@ -1852,17 +1865,18 @@ function Location() {
 
                       {/* Business Name */}
                       <div className="space-y-1">
-                        <label className="text-xs uppercase tracking-widest text-heritage-deep font-sans font-semibold">
-                          Company / Business Name
+                        <label className="text-xs uppercase tracking-[0.22em] text-heritage-deep font-sans font-medium">
+                          Company
                         </label>
-                        <div className="relative">
+                        <div className={`field-shell relative rounded-sm border bg-cream-dark/15 ${errors.businessName ? "border-red-500" : "border-gold/30"}`}>
                           <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gold" />
                           <input
                             type="text"
                             name="businessName"
                             value={formData.businessName}
                             onChange={handleChange}
-                            className={`w-full pl-10 pr-4 py-2 bg-cream-dark/15 border rounded-sm text-sm text-heritage-deep focus:border-gold focus:outline-none transition-all duration-300 font-sans ${errors.businessName ? "border-red-500 focus:border-red-500" : "border-gold/30"}`}
+                            autoComplete="organization"
+                            className={`w-full rounded-sm bg-transparent pl-10 pr-4 py-2.5 text-sm text-heritage-deep focus:outline-none font-sans ${errors.businessName ? "border-red-500 focus:border-red-500" : ""}`}
                             placeholder="e.g. Acme Corp"
                           />
                         </div>
@@ -1876,7 +1890,7 @@ function Location() {
 
                     {/* Enquiry Type */}
                     <div className="space-y-1">
-                      <label className="text-xs uppercase tracking-widest text-heritage-deep font-sans font-semibold">
+                      <label className="text-xs uppercase tracking-[0.22em] text-heritage-deep font-sans font-medium">
                         Enquiry Type
                       </label>
                       <div className="relative">
@@ -1884,7 +1898,7 @@ function Location() {
                           name="enquiryType"
                           value={formData.enquiryType}
                           onChange={handleChange}
-                          className={`w-full pl-4 pr-10 py-2 bg-cream border rounded-sm text-sm text-heritage-deep focus:border-gold focus:outline-none transition-all duration-300 font-sans appearance-none ${errors.enquiryType ? "border-red-500 focus:border-red-500" : "border-gold/30"}`}
+                          className={`w-full pl-4 pr-10 py-2.5 bg-cream border rounded-sm text-sm text-heritage-deep focus:border-gold focus:outline-none transition-all duration-300 font-sans appearance-none ${errors.enquiryType ? "border-red-500 focus:border-red-500" : "border-gold/30"}`}
                         >
                           <option value="">-- Select an option --</option>
                           <option value="Catering Service">
@@ -1915,17 +1929,17 @@ function Location() {
 
                     {/* Message */}
                     <div className="space-y-1">
-                      <label className="text-xs uppercase tracking-widest text-heritage-deep font-sans font-semibold">
+                      <label className="text-xs uppercase tracking-[0.22em] text-heritage-deep font-sans font-medium">
                         Your Message
                       </label>
-                      <div className="relative">
+                      <div className={`field-shell relative rounded-sm border bg-cream-dark/15 ${errors.message ? "border-red-500" : "border-gold/30"}`}>
                         <MessageSquare className="absolute left-3.5 top-3 w-4 h-4 text-gold" />
                         <textarea
                           name="message"
                           rows={4}
                           value={formData.message}
                           onChange={handleChange}
-                          className={`w-full pl-10 pr-4 py-2.5 bg-cream-dark/15 border rounded-sm text-sm text-heritage-deep focus:border-gold focus:outline-none transition-all duration-300 font-sans resize-none ${errors.message ? "border-red-500 focus:border-red-500" : "border-gold/30"}`}
+                          className={`w-full rounded-sm bg-transparent pl-10 pr-4 py-3 text-sm text-heritage-deep focus:outline-none transition-all duration-300 font-sans resize-none ${errors.message ? "border-red-500 focus:border-red-500" : ""}`}
                           placeholder="Details about your catering needs, group size, dates or other requirements..."
                         />
                       </div>

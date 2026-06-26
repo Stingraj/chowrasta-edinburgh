@@ -32,7 +32,9 @@ export function SectionTitle({
       <h2 className="text-4xl md:text-5xl text-heritage-deep mb-4">{title}</h2>
       <Ornament className="mb-4" />
       {subtitle && (
-        <p className="text-lg text-muted-foreground italic max-w-xl mx-auto">{subtitle}</p>
+        <p className="max-w-xl mx-auto font-sans text-base md:text-lg font-normal text-muted-foreground leading-relaxed">
+          {subtitle}
+        </p>
       )}
     </div>
   );

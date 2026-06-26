@@ -13,6 +13,11 @@ export const enquirySchema = z.object({
 
 export type EnquiryInput = z.infer<typeof enquirySchema>;
 
+const TITAN_SMTP_HOST = "smtp.titan.email";
+const TITAN_SMTP_PORT = 465;
+const TITAN_SMTP_SECURE = true;
+const TITAN_RECIPIENT = "service@chowrastaedi.com";
+
 export function generateEnquiryEmailHtml(data: EnquiryInput): string {
   return `
       <!DOCTYPE html>
@@ -123,7 +128,7 @@ export function generateEnquiryEmailHtml(data: EnquiryInput): string {
                 <div class="field-value"><a href="tel:${data.phone}" style="color: #c5a059; text-decoration: none;">${data.phone}</a></div>
               </div>
               <div class="field-row">
-                <div class="field-label">Business Name</div>
+                <div class="field-label">Company</div>
                 <div class="field-value">${data.businessName}</div>
               </div>
               <div class="field-row">
@@ -145,44 +150,48 @@ export function generateEnquiryEmailHtml(data: EnquiryInput): string {
   `;
 }
 
+function getTitanCredentials() {
+  const user = process.env.TITAN_EMAIL || process.env.SMTP_USER;
+  const pass = process.env.TITAN_PASSWORD || process.env.SMTP_PASS;
+
+  if (!user || !pass) {
+    console.error("Titan credentials (TITAN_EMAIL/TITAN_PASSWORD) are not defined.");
+    throw new Error("Email service is temporarily unavailable. Please try again later.");
+  }
+
+  return { user, pass };
+}
+
+export async function sendEnquiryEmail(data: EnquiryInput) {
+  const { user, pass } = getTitanCredentials();
+  const htmlContent = generateEnquiryEmailHtml(data);
+
+  const transporter = nodemailer.createTransport({
+    host: TITAN_SMTP_HOST,
+    port: TITAN_SMTP_PORT,
+    secure: TITAN_SMTP_SECURE,
+    auth: {
+      user,
+      pass,
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"Chowrasta Enquiry" <${user}>`,
+    to: TITAN_RECIPIENT,
+    subject: `New Contact Enquiry from ${data.name}`,
+    html: htmlContent,
+    replyTo: data.email,
+  });
+
+  return { success: true };
+}
+
 export const submitEnquiry = createServerFn({ method: "POST" })
-  .inputValidator(enquirySchema)
+  .validator(enquirySchema)
   .handler(async ({ data }) => {
-    // Read SMTP Configuration inside handler
-    const smtpHost = process.env.SMTP_HOST || "smtp.titan.email";
-    const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
-    const smtpSecure = process.env.SMTP_SECURE !== "false";
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
-    const smtpTo = process.env.SMTP_TO || "service@chowrastaedi.com";
-
-    if (!smtpUser || !smtpPass) {
-      console.error("SMTP credentials (SMTP_USER/SMTP_PASS) are not defined.");
-      throw new Error("Email service is temporarily unavailable. Please try again later.");
-    }
-
-    const htmlContent = generateEnquiryEmailHtml(data);
-
     try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpSecure,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-      });
-
-      await transporter.sendMail({
-        from: `"Chowrasta Enquiry" <${smtpUser}>`,
-        to: smtpTo,
-        subject: `New Business Enquiry from ${data.name}`,
-        html: htmlContent,
-        replyTo: data.email,
-      });
-
-      return { success: true };
+      return await sendEnquiryEmail(data);
     } catch (error) {
       console.error("Error in submitEnquiry server function:", error);
       const errorMessage =

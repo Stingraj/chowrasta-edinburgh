@@ -26,8 +26,8 @@
   --color-border: var(--border);
   --color-ring: var(--ring);
   --font-display: "Cinzel", "Playfair Display", serif;
-  --font-serif: "Playfair Display", Georgia, serif;
-  --font-body: "Cormorant Garamond", Georgia, serif;
+  --font-serif: "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
   --font-sans: "Inter", system-ui, sans-serif;
   --font-script: "Great Vibes", cursive;
 }
@@ -80,7 +80,12 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-body);
-    font-size: 1.05rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.65;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   h1,
   h2,
@@ -202,6 +207,26 @@
 }
 .btn-heritage:hover::before {
   transform: translateX(120%);
+}
+
+.field-shell {
+  transition:
+    border-color 250ms ease,
+    background-color 250ms ease,
+    box-shadow 250ms ease,
+    transform 250ms ease;
+}
+
+.field-shell:hover {
+  background-color: color-mix(in oklab, var(--color-cream) 70%, white);
+  border-color: color-mix(in oklab, var(--color-gold) 55%, transparent);
+}
+
+.field-shell:focus-within {
+  background-color: color-mix(in oklab, var(--color-cream) 78%, white);
+  border-color: color-mix(in oklab, var(--color-gold) 75%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-gold) 18%, transparent);
+  transform: translateY(-1px);
 }
 
 /* Floating handi for hero biryani */
