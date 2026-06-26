@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudioRouteImport } from './routes/studio'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StudioSplatRouteImport } from './routes/studio.$'
 import { Route as ApiContactRouteImport } from './routes/api/contact'
 
 const StudioRoute = StudioRouteImport.update({
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudioSplatRoute = StudioSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => StudioRoute,
+} as any)
 const ApiContactRoute = ApiContactRouteImport.update({
   id: '/api/contact',
   path: '/api/contact',
@@ -31,31 +37,34 @@ const ApiContactRoute = ApiContactRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/studio': typeof StudioRoute
+  '/studio': typeof StudioRouteWithChildren
   '/api/contact': typeof ApiContactRoute
+  '/studio/$': typeof StudioSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/studio': typeof StudioRoute
+  '/studio': typeof StudioRouteWithChildren
   '/api/contact': typeof ApiContactRoute
+  '/studio/$': typeof StudioSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/studio': typeof StudioRoute
+  '/studio': typeof StudioRouteWithChildren
   '/api/contact': typeof ApiContactRoute
+  '/studio/$': typeof StudioSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/studio' | '/api/contact'
+  fullPaths: '/' | '/studio' | '/api/contact' | '/studio/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/studio' | '/api/contact'
-  id: '__root__' | '/' | '/studio' | '/api/contact'
+  to: '/' | '/studio' | '/api/contact' | '/studio/$'
+  id: '__root__' | '/' | '/studio' | '/api/contact' | '/studio/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  StudioRoute: typeof StudioRoute
+  StudioRoute: typeof StudioRouteWithChildren
   ApiContactRoute: typeof ApiContactRoute
 }
 
@@ -75,6 +84,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/studio/$': {
+      id: '/studio/$'
+      path: '/$'
+      fullPath: '/studio/$'
+      preLoaderRoute: typeof StudioSplatRouteImport
+      parentRoute: typeof StudioRoute
+    }
     '/api/contact': {
       id: '/api/contact'
       path: '/api/contact'
@@ -85,9 +101,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface StudioRouteChildren {
+  StudioSplatRoute: typeof StudioSplatRoute
+}
+
+const StudioRouteChildren: StudioRouteChildren = {
+  StudioSplatRoute: StudioSplatRoute,
+}
+
+const StudioRouteWithChildren =
+  StudioRoute._addFileChildren(StudioRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  StudioRoute: StudioRoute,
+  StudioRoute: StudioRouteWithChildren,
   ApiContactRoute: ApiContactRoute,
 }
 export const routeTree = rootRouteImport

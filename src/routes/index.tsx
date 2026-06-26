@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/Logo";
 import { Ornament, SectionTitle } from "@/components/Ornament";
@@ -134,12 +134,92 @@ function PlatformBrand({
 function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [activeSection, setActiveSection] = useState("home");
+  const [navHeight, setNavHeight] = useState(73);
+  const headerRef = useRef<HTMLElement>(null);
   const sanityData = Route.useLoaderData();
 
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const updateNavHeight = () => {
+      const nextHeight = Math.round(header.getBoundingClientRect().height);
+      if (nextHeight > 0) {
+        setNavHeight(nextHeight);
+      }
+    };
+
+    updateNavHeight();
+
+    const resizeObserver = new ResizeObserver(updateNavHeight);
+    resizeObserver.observe(header);
+    window.addEventListener("resize", updateNavHeight);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateNavHeight);
+    };
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--site-nav-height", `${navHeight}px`);
+    root.style.setProperty("--section-scroll-offset", `${navHeight + 24}px`);
+    root.style.setProperty("--menu-sticky-offset", `${navHeight + 12}px`);
+
+    return () => {
+      root.style.removeProperty("--site-nav-height");
+      root.style.removeProperty("--section-scroll-offset");
+      root.style.removeProperty("--menu-sticky-offset");
+    };
+  }, [navHeight]);
+
+  useEffect(() => {
+    const sections = ["home", "story", "menu", "pickles", "catering", "gallery", "location"];
+    let ticking = false;
+
+    const updateActiveSection = () => {
+      const marker = window.scrollY + navHeight + window.innerHeight * 0.28;
+      let currentSection = sections[0];
+
+      sections.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && el.offsetTop <= marker) {
+          currentSection = id;
+        }
+      });
+
+      setActiveSection((prev) => (prev === currentSection ? prev : currentSection));
+      ticking = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        window.requestAnimationFrame(updateActiveSection);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, [navHeight]);
+
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div
+      className="min-h-screen bg-background text-foreground"
+      style={{ paddingTop: "var(--site-nav-height, 73px)" }}
+    >
       <StickyNavShadow />
       <Nav
+        headerRef={headerRef}
+        activeSection={activeSection}
         isMobileMenuOpen={isMobileMenuOpen}
         onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
         onCloseMobileMenu={() => setIsMobileMenuOpen(false)}
@@ -147,7 +227,11 @@ function Home() {
       <Hero data={sanityData?.hero} />
       <Marquee data={sanityData?.features} />
       <Story data={sanityData?.story} />
-      <MenuSection onSelectItem={setSelectedItem} data={sanityData?.menuItems} />
+      <MenuSection
+        onSelectItem={setSelectedItem}
+        data={sanityData?.menuItems}
+        navHeight={navHeight}
+      />
       <CombosSection />
       <PicklesSection />
       <DeliveryPlatforms />
@@ -165,46 +249,69 @@ function Home() {
 }
 
 function Nav({
+  headerRef,
+  activeSection,
   isMobileMenuOpen,
   onToggleMobileMenu,
   onCloseMobileMenu,
 }: {
+  headerRef: RefObject<HTMLElement | null>;
+  activeSection: string;
   isMobileMenuOpen: boolean;
   onToggleMobileMenu: () => void;
   onCloseMobileMenu: () => void;
 }) {
   return (
     <motion.header
+      ref={headerRef}
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
       data-sticky-nav
-      className="sticky top-0 z-30 bg-cream/85 backdrop-blur border-b border-gold/30"
+      className="fixed inset-x-0 top-0 z-40 bg-cream/85 backdrop-blur border-b border-gold/30"
     >
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto min-h-[73px] md:min-h-[81px] px-6 py-4 flex items-center justify-between">
         <Logo size="sm" />
         <nav className="hidden md:flex items-center gap-6 text-sm tracking-[0.15em] uppercase font-sans text-heritage-deep">
-          <a href="#home" className="link-underline hover:text-spice transition-colors">
+          <a
+            href="#home"
+            className={`link-underline hover:text-spice transition-colors ${activeSection === "home" ? "active" : ""}`}
+          >
             Home
           </a>
-          <a href="#story" className="link-underline hover:text-spice transition-colors">
+          <a
+            href="#story"
+            className={`link-underline hover:text-spice transition-colors ${activeSection === "story" ? "active" : ""}`}
+          >
             Our Story
           </a>
-          <a href="#menu" className="link-underline hover:text-spice transition-colors">
+          <a
+            href="#menu"
+            className={`link-underline hover:text-spice transition-colors ${activeSection === "menu" ? "active" : ""}`}
+          >
             Menu
           </a>
-          <a href="#pickles" className="link-underline hover:text-spice transition-colors">
+          <a
+            href="#pickles"
+            className={`link-underline hover:text-spice transition-colors ${activeSection === "pickles" ? "active" : ""}`}
+          >
             Pickles
           </a>
-          <a href="#catering" className="link-underline hover:text-spice transition-colors">
+          <a
+            href="#catering"
+            className={`link-underline hover:text-spice transition-colors ${activeSection === "catering" ? "active" : ""}`}
+          >
             Catering
           </a>
-          <a href="#gallery" className="link-underline hover:text-spice transition-colors">
+          <a
+            href="#gallery"
+            className={`link-underline hover:text-spice transition-colors ${activeSection === "gallery" ? "active" : ""}`}
+          >
             Gallery
           </a>
           <a
             href="#location"
-            className="link-underline hover:text-spice transition-colors font-semibold"
+            className={`link-underline hover:text-spice transition-colors font-semibold ${activeSection === "location" ? "active" : ""}`}
           >
             Contact
           </a>
@@ -249,49 +356,49 @@ function Nav({
               <a
                 href="#home"
                 onClick={onCloseMobileMenu}
-                className="hover:text-spice transition-colors font-medium"
+                className={`hover:text-spice transition-colors font-medium ${activeSection === "home" ? "text-spice font-bold" : ""}`}
               >
                 Home
               </a>
               <a
                 href="#story"
                 onClick={onCloseMobileMenu}
-                className="hover:text-spice transition-colors font-medium"
+                className={`hover:text-spice transition-colors font-medium ${activeSection === "story" ? "text-spice font-bold" : ""}`}
               >
                 Our Story
               </a>
               <a
                 href="#menu"
                 onClick={onCloseMobileMenu}
-                className="hover:text-spice transition-colors font-medium"
+                className={`hover:text-spice transition-colors font-medium ${activeSection === "menu" ? "text-spice font-bold" : ""}`}
               >
                 Menu
               </a>
               <a
                 href="#pickles"
                 onClick={onCloseMobileMenu}
-                className="hover:text-spice transition-colors font-medium"
+                className={`hover:text-spice transition-colors font-medium ${activeSection === "pickles" ? "text-spice font-bold" : ""}`}
               >
                 Pickles
               </a>
               <a
                 href="#catering"
                 onClick={onCloseMobileMenu}
-                className="hover:text-spice transition-colors font-medium"
+                className={`hover:text-spice transition-colors font-medium ${activeSection === "catering" ? "text-spice font-bold" : ""}`}
               >
                 Catering
               </a>
               <a
                 href="#gallery"
                 onClick={onCloseMobileMenu}
-                className="hover:text-spice transition-colors font-medium"
+                className={`hover:text-spice transition-colors font-medium ${activeSection === "gallery" ? "text-spice font-bold" : ""}`}
               >
                 Gallery
               </a>
               <a
                 href="#location"
                 onClick={onCloseMobileMenu}
-                className="hover:text-spice transition-colors font-bold text-gold"
+                className={`hover:text-spice transition-colors font-bold text-gold ${activeSection === "location" ? "text-spice font-black" : ""}`}
               >
                 Contact
               </a>
@@ -342,7 +449,7 @@ function Hero({ data }: { data: any }) {
   const bgImgSrc = data?.backgroundImage ? urlFor(data.backgroundImage).url() : "/images/hero/hero-biryani.jpg";
 
   return (
-    <section id="home" className="relative overflow-hidden" ref={ref}>
+    <section id="home" data-section-anchor className="relative overflow-hidden" ref={ref}>
       <div
         className="absolute inset-0 opacity-[0.07] pointer-events-none"
         style={{
@@ -636,7 +743,7 @@ function Story({ data }: { data: any }) {
   const secondaryImgSrc = data?.secondaryImage ? urlFor(data.secondaryImage).url() : "/images/sections/charminar.jpg";
 
   return (
-    <section id="story" className="py-24 relative bg-cream-dark/5 overflow-hidden">
+    <section id="story" data-section-anchor className="py-24 relative bg-cream-dark/5 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-14 items-center">
         <Reveal y={28}>
           <div className="relative img-zoom">
@@ -709,22 +816,93 @@ function Pillar({ n, label }: { n: string; label: string }) {
   );
 }
 
-function MenuSection({ onSelectItem, data }: { onSelectItem: (item: MenuItem) => void; data: any[] | null }) {
+const mapSanityCategory = (sanityCat?: string): string => {
+  if (!sanityCat) return "Starters";
+  const catLower = sanityCat.toLowerCase().trim();
+  
+  if (catLower === "biryanis" || catLower === "biryani") return "Biryani’s";
+  if (catLower === "starters" || catLower === "starters & curries" || catLower === "starter") return "Starters";
+  if (catLower === "streetfood" || catLower === "street food" || catLower === "snacks" || catLower === "snack") return "Snacks";
+  if (catLower === "desserts" || catLower === "desserts & drinks" || catLower === "dessert") return "Desserts";
+  if (catLower === "fried rice" || catLower === "friedrice") return "Fried Rice";
+  if (catLower === "cold beverages" || catLower === "beverages" || catLower === "drinks" || catLower === "beverage") return "Cold Beverages";
+  if (catLower === "chai" || catLower === "tea") return "Chai";
+  
+  const found = CATEGORIES.find((c) => c.toLowerCase() === catLower);
+  return found || "Starters";
+};
+
+function MenuSection({
+  onSelectItem,
+  data,
+  navHeight,
+}: {
+  onSelectItem: (item: MenuItem) => void;
+  data: any[] | null;
+  navHeight: number;
+}) {
   const [activeCategory, setActiveCategory] = useState("Biryani’s");
+  const filterRef = useRef<HTMLDivElement>(null);
+  const [isFilterStuck, setIsFilterStuck] = useState(false);
 
-  const items = data && data.length > 0 ? data.map((item: any) => ({
-    id: item._id,
-    name: item.name,
-    price: item.price,
-    category: item.category,
-    description: item.description,
-    image: item.image ? urlFor(item.image).url() : "/images/menu/starters/chicken-65.jpg",
-    tag: item.tags && item.tags.length > 0 ? item.tags[0] : undefined,
-  })) : MENU_ITEMS;
+  useEffect(() => {
+    const stickyOffset = navHeight + 12;
 
-  const filteredItems = items.filter(
-    (item) => item.category.toLowerCase() === activeCategory.toLowerCase(),
-  );
+    const handleScroll = () => {
+      if (!filterRef.current) return;
+      const rect = filterRef.current.getBoundingClientRect();
+      setIsFilterStuck(rect.top <= stickyOffset + 1);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
+    handleScroll();
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, [navHeight]);
+
+  const items = useMemo(() => {
+    // Start with a map of static items keyed by lowercase name
+    const itemsMap = new Map<string, MenuItem>();
+    MENU_ITEMS.forEach((item) => {
+      itemsMap.set(item.name.toLowerCase(), { ...item });
+    });
+
+    // Merge Sanity items into the map
+    if (data && data.length > 0) {
+      data.forEach((sanityItem: any) => {
+        const nameLower = sanityItem.name.toLowerCase();
+        const mappedCat = mapSanityCategory(sanityItem.category);
+        const existing = itemsMap.get(nameLower);
+
+        const mappedItem: MenuItem = {
+          id: sanityItem._id || existing?.id || nameLower,
+          name: sanityItem.name,
+          price: sanityItem.price,
+          category: mappedCat || existing?.category || "Starters",
+          description: sanityItem.description || existing?.description || "",
+          image: sanityItem.image 
+            ? urlFor(sanityItem.image).url() 
+            : (existing?.image || "/images/menu/starters/chicken-65.jpg"),
+          tag: sanityItem.tags && sanityItem.tags.length > 0 
+            ? sanityItem.tags[0] 
+            : existing?.tag,
+        };
+
+        itemsMap.set(nameLower, mappedItem);
+      });
+    }
+
+    return Array.from(itemsMap.values());
+  }, [data]);
+
+  const filteredItems = useMemo(() => {
+    return items.filter(
+      (item) => item.category.toLowerCase() === activeCategory.toLowerCase(),
+    );
+  }, [items, activeCategory]);
 
   const getBadgeStyles = (tag: string) => {
     switch (tag.toLowerCase()) {
@@ -742,7 +920,7 @@ function MenuSection({ onSelectItem, data }: { onSelectItem: (item: MenuItem) =>
   };
 
   return (
-    <section id="menu" className="py-24 relative bg-cream-dark/10">
+    <section id="menu" data-section-anchor className="py-24 relative bg-cream-dark/10">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col items-center text-center mb-12">
           {/* Logo in Menu Section top area */}
@@ -764,29 +942,44 @@ function MenuSection({ onSelectItem, data }: { onSelectItem: (item: MenuItem) =>
         </div>
 
         {/* Category Tabs */}
-        <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-16 max-w-4xl mx-auto">
-          {CATEGORIES.map((cat) => {
-            const isActive = cat.toLowerCase() === activeCategory.toLowerCase();
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2.5 rounded-sm text-xs tracking-[0.2em] uppercase font-sans transition-all duration-300 border ${
-                  isActive
-                    ? "bg-heritage text-cream border-heritage shadow-lg shadow-heritage/10 shadow-sm"
-                    : "bg-cream text-heritage-deep border-gold/30 hover:border-gold hover:bg-gold/5 cursor-pointer"
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
+        <div
+          ref={filterRef}
+          style={{ top: "var(--menu-sticky-offset, 85px)" }}
+          className={`sticky z-30 transition-all duration-300 ${
+            isFilterStuck
+              ? "bg-cream/95 backdrop-blur-md border-b border-gold/20 py-4 mb-12 shadow-md -mx-6 px-6"
+              : "bg-transparent py-2 mb-16 border-b border-transparent"
+          }`}
+        >
+          <div className="hide-scrollbar flex md:flex-wrap justify-start md:justify-center gap-2 md:gap-3 max-w-4xl mx-auto overflow-x-auto md:overflow-visible pb-1 md:pb-0">
+            {CATEGORIES.map((cat) => {
+              const isActive = cat.toLowerCase() === activeCategory.toLowerCase();
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`shrink-0 whitespace-nowrap px-5 py-2.5 rounded-sm text-xs tracking-[0.2em] uppercase font-sans transition-all duration-300 border ${
+                    isActive
+                      ? "bg-heritage text-cream border-heritage shadow-lg shadow-heritage/10 shadow-sm"
+                      : "bg-cream text-heritage-deep border-gold/30 hover:border-gold hover:bg-gold/5 cursor-pointer"
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Product Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredItems.map((item, i) => (
-            <Reveal key={item.id} delay={(i % 2) * 80} y={24}>
+          {filteredItems.map((item) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
               <article
                 onClick={() => onSelectItem(item)}
                 className="heritage-card group h-40 md:h-48 flex flex-row overflow-hidden cursor-pointer"
@@ -835,7 +1028,7 @@ function MenuSection({ onSelectItem, data }: { onSelectItem: (item: MenuItem) =>
                   </div>
                 </div>
               </article>
-            </Reveal>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -899,7 +1092,7 @@ function PicklesSection() {
   ];
 
   return (
-    <section id="pickles" className="py-24 bg-cream relative overflow-hidden">
+    <section id="pickles" data-section-anchor className="py-24 bg-cream relative overflow-hidden">
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-[radial-gradient(#c5a059_1px,transparent_1px)] [background-size:18px_18px]" />
       <div className="max-w-7xl mx-auto px-6 relative">
         <SectionTitle
@@ -1125,7 +1318,7 @@ function SpiceBand() {
 
 function Catering() {
   return (
-    <section id="catering" className="py-24 bg-heritage-deep text-cream relative overflow-hidden">
+    <section id="catering" data-section-anchor className="py-24 bg-heritage-deep text-cream relative overflow-hidden">
       <img
         src="/images/sections/charminar.jpg"
         alt=""
@@ -1271,7 +1464,7 @@ function Gallery() {
     "/images/gallery/gallery-traditional-1.jpg",
   ];
   return (
-    <section id="gallery" className="py-24">
+    <section id="gallery" data-section-anchor className="py-24">
       <div className="max-w-7xl mx-auto px-6">
         <SectionTitle
           eyebrow="Gallery"
@@ -1387,7 +1580,7 @@ function Location() {
   };
 
   return (
-    <section id="location" className="py-24 bg-cream-dark/40 relative overflow-hidden">
+    <section id="location" data-section-anchor className="py-24 bg-cream-dark/40 relative overflow-hidden">
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#c5a059_1px,transparent_1px)] [background-size:16px_16px]" />
       <div className="max-w-7xl mx-auto px-6 relative">
         <SectionTitle

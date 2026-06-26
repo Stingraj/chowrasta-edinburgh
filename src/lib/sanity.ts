@@ -13,7 +13,7 @@ export function getSanityClient() {
       projectId,
       dataset,
       apiVersion: "2024-03-11",
-      useCdn: process.env.NODE_ENV === "production", // bypass CDN for dev to see instant updates
+      useCdn: false, // Set to false to ensure all content updates in Sanity go live instantly on refresh
     });
   }
   return clientInstance;

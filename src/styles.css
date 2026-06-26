@@ -34,6 +34,9 @@
 
 :root {
   --radius: 0.25rem;
+  --site-nav-height: 73px;
+  --section-scroll-offset: 97px;
+  --menu-sticky-offset: 85px;
 
   /* Brand */
   --heritage: oklch(0.32 0.05 155);
@@ -62,8 +65,13 @@
 }
 
 @layer base {
+  html,
+  body {
+    overflow-x: clip;
+  }
   html {
     scroll-behavior: smooth;
+    scroll-padding-top: var(--section-scroll-offset);
   }
   * {
     border-color: var(--color-border);
@@ -85,6 +93,10 @@
     background: color-mix(in oklab, var(--color-gold) 60%, transparent);
     color: var(--color-heritage-deep);
   }
+}
+
+[data-section-anchor] {
+  scroll-margin-top: var(--section-scroll-offset);
 }
 
 @utility heritage-card {
@@ -123,6 +135,15 @@
   background-color: color-mix(in oklab, var(--color-cream) 96%, transparent);
 }
 
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Underline link animation */
 .link-underline {
   position: relative;
@@ -142,6 +163,13 @@
 .link-underline:hover::after {
   transform: scaleX(1);
   transform-origin: left center;
+}
+.link-underline.active {
+  color: var(--color-spice) !important;
+}
+.link-underline.active::after {
+  transform: scaleX(1) !important;
+  transform-origin: left center !important;
 }
 
 /* CTA button shimmer */
