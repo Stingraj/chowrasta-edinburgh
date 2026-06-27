@@ -366,7 +366,7 @@ export const MENU_ITEMS: MenuItem[] = [
     price: "11.99",
     category: "Biryani’s",
     description: "Savory biryani rice served alongside crispy, seasoned chicken lollipops.",
-    image: "/images/menu/starters/chicken-lollipop.jpg",
+    image: "/images/menu/biryani/chicken-lollipop-biryani.jpg",
   },
   {
     id: "biryani-7",
