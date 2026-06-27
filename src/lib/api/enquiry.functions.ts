@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import nodemailer from "nodemailer";
 
 export const enquirySchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -12,10 +11,6 @@ export const enquirySchema = z.object({
 });
 
 export type EnquiryInput = z.infer<typeof enquirySchema>;
-
-const TITAN_SMTP_HOST = "smtp.titan.email";
-const TITAN_SMTP_PORT = 587;
-const TITAN_SMTP_SECURE = false;
 
 export function generateEnquiryEmailHtml(data: EnquiryInput): string {
   return `
@@ -149,68 +144,76 @@ export function generateEnquiryEmailHtml(data: EnquiryInput): string {
   `;
 }
 
-function getEmailConfig() {
-  const user = process.env.TITAN_EMAIL;
-  const pass = process.env.TITAN_PASSWORD;
+function getResendConfig() {
+  const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.TO_EMAIL;
+  const from = process.env.FROM_EMAIL || "onboarding@resend.dev";
 
-  if (!user || !pass || !to) {
-    console.error("Email configuration validation failed. Missing variables:", {
-      TITAN_EMAIL: user ? "present" : "missing",
-      TITAN_PASSWORD: pass ? "present" : "missing",
+  if (!apiKey || !to) {
+    console.error("Resend configuration validation failed. Missing variables:", {
+      RESEND_API_KEY: apiKey ? "present" : "missing",
       TO_EMAIL: to ? "present" : "missing",
     });
     throw new Error("Email service is temporarily unavailable. Please try again later.");
   }
 
-  return { user, pass, to };
+  return { apiKey, to, from };
 }
 
 export async function sendEnquiryEmail(data: EnquiryInput) {
-  const { user, pass, to } = getEmailConfig();
+  const { apiKey, to, from } = getResendConfig();
   const htmlContent = generateEnquiryEmailHtml(data);
 
-  const transporter = nodemailer.createTransport({
-    host: TITAN_SMTP_HOST,
-    port: TITAN_SMTP_PORT,
-    secure: TITAN_SMTP_SECURE,
-    auth: {
-      user,
-      pass,
-    },
-  });
-
   try {
-    console.log("Attempting to send email via Nodemailer SMTP...", {
-      host: TITAN_SMTP_HOST,
-      port: TITAN_SMTP_PORT,
-      secure: TITAN_SMTP_SECURE,
-      user,
+    console.log("Attempting to send email via Resend API...", {
       to,
+      from,
       senderName: data.name,
       replyTo: data.email,
     });
 
-    const info = await transporter.sendMail({
-      from: `"Chowrasta Enquiry" <${user}>`,
-      to,
-      subject: `New Contact Enquiry from ${data.name}`,
-      html: htmlContent,
-      replyTo: data.email,
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: `Chowrasta Enquiry <${from}>`,
+        to: [to],
+        subject: `New Contact Enquiry from ${data.name}`,
+        html: htmlContent,
+        reply_to: data.email,
+      }),
     });
 
-    console.log("Email sent successfully. Message ID:", info.messageId);
+    if (!response.ok) {
+      let errorDetails: any = null;
+      try {
+        errorDetails = await response.json();
+      } catch (e) {
+        errorDetails = await response.text();
+      }
+
+      throw new Error(
+        `Resend API returned status ${response.status}: ${
+          typeof errorDetails === "object"
+            ? JSON.stringify(errorDetails)
+            : errorDetails
+        }`
+      );
+    }
+
+    const result = await response.json();
+    console.log("Email sent successfully via Resend. Response:", result);
   } catch (error) {
-    console.error("Nodemailer SMTP mail delivery failed. Error details:", {
+    console.error("Resend API mail delivery failed. Error details:", {
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
       error,
-      smtpConfig: {
-        host: TITAN_SMTP_HOST,
-        port: TITAN_SMTP_PORT,
-        secure: TITAN_SMTP_SECURE,
-        user,
+      config: {
         to,
+        from,
       },
     });
     throw error;
@@ -231,7 +234,7 @@ export const submitEnquiry = createServerFn({ method: "POST" })
         error,
       });
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to send email enquiry via SMTP.";
+        error instanceof Error ? error.message : "Failed to send email enquiry via Resend API.";
       throw new Error(errorMessage);
     }
   });
