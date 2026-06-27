@@ -1,62 +1,61 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { enquirySchema, sendEnquiryEmail } from "@/lib/api/enquiry.functions";
+import { createAPIFileRoute } from "@tanstack/react-start/api";
+import nodemailer from "nodemailer";
 
-export const Route = createFileRoute("/api/contact")({
-  server: {
-    handlers: {
-      POST: async ({ request }) => {
-        try {
-          const body = await request.json();
+export const Route = createAPIFileRoute("/api/contact")({
+  POST: async ({ request }) => {
+    try {
+      const body = await request.json();
+      const { name, phone, email, businessName, enquiryType, message } = body;
 
-          // Validate the input data using the Zod schema
-          const parseResult = enquirySchema.safeParse(body);
-          if (!parseResult.success) {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: "Validation failed",
-                details: parseResult.error.format(),
-              }),
-              {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-              }
-            );
-          }
+      if (!name || !email || !message) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Missing required fields" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
 
-          const data = parseResult.data;
+      const transporter = nodemailer.createTransport({
+        host: "smtp.titan.email",
+        port: 587,
+        secure: false, // false for port 587 (uses STARTTLS)
+        auth: {
+          user: process.env.TITAN_EMAIL,
+          pass: process.env.TITAN_PASSWORD,
+        },
+      });
 
-          await sendEnquiryEmail(data);
+      const mailOptions = {
+        from: `"Chowrasta Enquiry" <${process.env.TITAN_EMAIL}>`,
+        to: process.env.TO_EMAIL || "service@chowrastaedi.com",
+        replyTo: email,
+        subject: `New Contact Enquiry from ${name}`,
+        html: `
+          <div style="font-family: sans-serif; color: #333;">
+            <h2 style="color: #c5a059;">New Contact Enquiry</h2>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Phone:</strong> ${phone || "N/A"}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Company:</strong> ${businessName || "N/A"}</p>
+            <p><strong>Enquiry Type:</strong> ${enquiryType || "N/A"}</p>
+            <p><strong>Message:</strong></p>
+            <div style="background: #f9f9f9; padding: 15px; border-left: 4px solid #c5a059; margin-top: 10px; white-space: pre-wrap;">
+              ${message}
+            </div>
+          </div>
+        `,
+      };
 
-          return new Response(
-            JSON.stringify({
-              success: true,
-              message: "Enquiry submitted successfully",
-            }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        } catch (error) {
-          console.error("Error in /api/contact endpoint:", {
-            errorMessage: error instanceof Error ? error.message : String(error),
-            errorStack: error instanceof Error ? error.stack : undefined,
-            error,
-          });
-          const msg = error instanceof Error ? error.message : "Internal Server Error";
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: msg,
-            }),
-            {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-      },
-    },
+      await transporter.sendMail(mailOptions);
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Internal Server Error";
+      return new Response(
+        JSON.stringify({ success: false, error: msg }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
   },
 });
