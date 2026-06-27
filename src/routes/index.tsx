@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { useForm } from "@formspree/react";
+import { useSubmit } from "@formspree/react";
 import { Logo } from "@/components/Logo";
 import { Ornament, SectionTitle } from "@/components/Ornament";
 import { Reveal } from "@/components/Reveal";
@@ -1557,7 +1557,7 @@ function Location() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [formspreeState, handleSubmitFormspree] = useForm("xkolbjrk");
+  const submitFormspree = useSubmit("xkolbjrk");
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -1606,8 +1606,8 @@ function Location() {
     setErrorMessage("");
 
     try {
-      const result = await handleSubmitFormspree(e);
-      if (result.response && result.response.ok) {
+      const result = await submitFormspree(e);
+      if (result.kind === "success") {
         setStatus("success");
         setFormData({
           name: "",
@@ -1618,8 +1618,13 @@ function Location() {
           message: "",
         });
       } else {
-        const errorsList = result.body?.errors || [];
-        const msg = errorsList.map((err: any) => err.message).join(", ") || "Failed to submit enquiry. Please try again.";
+        const formErrors = result.getFormErrors();
+        const allFieldErrors = result.getAllFieldErrors();
+        const msg =
+          [
+            ...formErrors.map((err) => err.message),
+            ...allFieldErrors.flatMap(([_, errs]) => errs.map((err) => err.message)),
+          ].join(", ") || "Failed to submit enquiry. Please try again.";
         throw new Error(msg);
       }
     } catch (err) {
@@ -1772,9 +1777,6 @@ function Location() {
                     <button
                       onClick={() => {
                         setStatus("idle");
-                        if (typeof formspreeState.reset === "function") {
-                          formspreeState.reset();
-                        }
                       }}
                       className="btn-heritage px-6 py-2.5 bg-heritage text-cream text-xs font-semibold tracking-widest uppercase font-sans cursor-pointer"
                     >
