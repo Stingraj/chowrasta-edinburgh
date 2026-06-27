@@ -14,8 +14,8 @@ export const enquirySchema = z.object({
 export type EnquiryInput = z.infer<typeof enquirySchema>;
 
 const TITAN_SMTP_HOST = "smtp.titan.email";
-const TITAN_SMTP_PORT = 465;
-const TITAN_SMTP_SECURE = true;
+const TITAN_SMTP_PORT = 587;
+const TITAN_SMTP_SECURE = false;
 const TITAN_RECIPIENT = "service@chowrastaedi.com";
 
 export function generateEnquiryEmailHtml(data: EnquiryInput): string {
@@ -151,8 +151,8 @@ export function generateEnquiryEmailHtml(data: EnquiryInput): string {
 }
 
 function getTitanCredentials() {
-  const user = process.env.TITAN_EMAIL || process.env.SMTP_USER;
-  const pass = process.env.TITAN_PASSWORD || process.env.SMTP_PASS;
+  const user = process.env.TITAN_EMAIL;
+  const pass = process.env.TITAN_PASSWORD;
 
   if (!user || !pass) {
     console.error("Titan credentials (TITAN_EMAIL/TITAN_PASSWORD) are not defined.");
@@ -176,13 +176,18 @@ export async function sendEnquiryEmail(data: EnquiryInput) {
     },
   });
 
-  await transporter.sendMail({
-    from: `"Chowrasta Enquiry" <${user}>`,
-    to: TITAN_RECIPIENT,
-    subject: `New Contact Enquiry from ${data.name}`,
-    html: htmlContent,
-    replyTo: data.email,
-  });
+  try {
+    await transporter.sendMail({
+      from: `"Chowrasta Enquiry" <${user}>`,
+      to: TITAN_RECIPIENT,
+      subject: `New Contact Enquiry from ${data.name}`,
+      html: htmlContent,
+      replyTo: data.email,
+    });
+  } catch (error) {
+    console.error("Nodemailer SMTP mail delivery failed:", error);
+    throw error;
+  }
 
   return { success: true };
 }
