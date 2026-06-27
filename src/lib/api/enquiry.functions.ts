@@ -16,7 +16,6 @@ export type EnquiryInput = z.infer<typeof enquirySchema>;
 const TITAN_SMTP_HOST = "smtp.titan.email";
 const TITAN_SMTP_PORT = 587;
 const TITAN_SMTP_SECURE = false;
-const TITAN_RECIPIENT = "service@chowrastaedi.com";
 
 export function generateEnquiryEmailHtml(data: EnquiryInput): string {
   return `
@@ -150,20 +149,25 @@ export function generateEnquiryEmailHtml(data: EnquiryInput): string {
   `;
 }
 
-function getTitanCredentials() {
+function getEmailConfig() {
   const user = process.env.TITAN_EMAIL;
   const pass = process.env.TITAN_PASSWORD;
+  const to = process.env.TO_EMAIL;
 
-  if (!user || !pass) {
-    console.error("Titan credentials (TITAN_EMAIL/TITAN_PASSWORD) are not defined.");
+  if (!user || !pass || !to) {
+    console.error("Email configuration validation failed. Missing variables:", {
+      TITAN_EMAIL: user ? "present" : "missing",
+      TITAN_PASSWORD: pass ? "present" : "missing",
+      TO_EMAIL: to ? "present" : "missing",
+    });
     throw new Error("Email service is temporarily unavailable. Please try again later.");
   }
 
-  return { user, pass };
+  return { user, pass, to };
 }
 
 export async function sendEnquiryEmail(data: EnquiryInput) {
-  const { user, pass } = getTitanCredentials();
+  const { user, pass, to } = getEmailConfig();
   const htmlContent = generateEnquiryEmailHtml(data);
 
   const transporter = nodemailer.createTransport({
@@ -177,15 +181,38 @@ export async function sendEnquiryEmail(data: EnquiryInput) {
   });
 
   try {
-    await transporter.sendMail({
+    console.log("Attempting to send email via Nodemailer SMTP...", {
+      host: TITAN_SMTP_HOST,
+      port: TITAN_SMTP_PORT,
+      secure: TITAN_SMTP_SECURE,
+      user,
+      to,
+      senderName: data.name,
+      replyTo: data.email,
+    });
+
+    const info = await transporter.sendMail({
       from: `"Chowrasta Enquiry" <${user}>`,
-      to: TITAN_RECIPIENT,
+      to,
       subject: `New Contact Enquiry from ${data.name}`,
       html: htmlContent,
       replyTo: data.email,
     });
+
+    console.log("Email sent successfully. Message ID:", info.messageId);
   } catch (error) {
-    console.error("Nodemailer SMTP mail delivery failed:", error);
+    console.error("Nodemailer SMTP mail delivery failed. Error details:", {
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      error,
+      smtpConfig: {
+        host: TITAN_SMTP_HOST,
+        port: TITAN_SMTP_PORT,
+        secure: TITAN_SMTP_SECURE,
+        user,
+        to,
+      },
+    });
     throw error;
   }
 
@@ -198,7 +225,11 @@ export const submitEnquiry = createServerFn({ method: "POST" })
     try {
       return await sendEnquiryEmail(data);
     } catch (error) {
-      console.error("Error in submitEnquiry server function:", error);
+      console.error("Error in submitEnquiry server function:", {
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        error,
+      });
       const errorMessage =
         error instanceof Error ? error.message : "Failed to send email enquiry via SMTP.";
       throw new Error(errorMessage);

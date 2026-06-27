@@ -39,7 +39,11 @@ export const Route = createFileRoute("/api/contact")({
             }
           );
         } catch (error) {
-          console.error("Error in /api/contact endpoint:", error);
+          console.error("Error in /api/contact endpoint:", {
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+            error,
+          });
           const msg = error instanceof Error ? error.message : "Internal Server Error";
           return new Response(
             JSON.stringify({
