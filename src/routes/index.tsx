@@ -6,6 +6,7 @@ import { Logo } from "@/components/Logo";
 import { Ornament, SectionTitle } from "@/components/Ornament";
 import { Reveal } from "@/components/Reveal";
 import { ScrollTop, StickyNavShadow } from "@/components/ScrollTop";
+import { Reels } from "@/components/Reels";
 import { CATEGORIES, MENU_ITEMS, COMBO_ITEMS, type MenuItem } from "@/data/menu";
 import { getSanityClient, urlFor } from "@/lib/sanity";
 import {
@@ -240,6 +241,7 @@ function Home() {
       <Catering />
       <Gallery />
       <Location />
+      <Reels />
       <Footer />
       <ScrollTop />
       <WhatsAppFloat />
