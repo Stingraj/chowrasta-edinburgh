@@ -1669,7 +1669,7 @@ function Location() {
               {
                 t: "Contact Info",
                 l1: "+44 7769 237464",
-                l2: "service@chowrastaedi.com",
+                l2: "info@chowrastaedi.com",
                 icon: <Mail className="w-5 h-5 text-gold" />,
               },
             ].map((c, i) => (
@@ -1712,11 +1712,11 @@ function Location() {
                         </div>
                         <div className="flex items-center font-sans text-sm md:text-base text-muted-foreground flex-col items-start gap-1.5">
                           <a
-                            href="mailto:service@chowrastaedi.com"
+                            href="mailto:info@chowrastaedi.com"
                             className="hover:text-gold transition-colors inline-flex items-center gap-1.5"
                           >
                             <Mail className="w-4 h-4 text-gold shrink-0" />
-                            service@chowrastaedi.com
+                            info@chowrastaedi.com
                           </a>
                           <a
                             href="mailto:chowrastaedi07@gmail.com"
@@ -2076,8 +2076,8 @@ function Footer() {
             </a>
           </p>
           <p className="font-serif text-cream/80">
-            <a href="mailto:service@chowrastaedi.com" className="hover:text-gold transition-colors">
-              service@chowrastaedi.com
+            <a href="mailto:info@chowrastaedi.com" className="hover:text-gold transition-colors">
+              info@chowrastaedi.com
             </a>
           </p>
           <p className="font-serif text-cream/80">

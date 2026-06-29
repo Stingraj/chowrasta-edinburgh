@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/contact")({
 
           const mailOptions = {
             from: `"Chowrasta Enquiry" <${process.env.TITAN_EMAIL}>`,
-            to: process.env.TO_EMAIL || "service@chowrastaedi.com",
+            to: process.env.TO_EMAIL || "info@chowrastaedi.com",
             replyTo: email,
             subject: `New Contact Enquiry from ${name}`,
             html: `
